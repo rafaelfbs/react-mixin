@@ -13,6 +13,13 @@ var mixinProto = mixin({
   getChildContext: mixin.MANY_MERGED
 });
 
+var staticPropNames = [
+  'childContextTypes',
+  'contextTypes',
+  'propTypes',
+  'defaultProps'
+]
+
 function setDefaultProps(reactMixin) {
   var getDefaultProps = reactMixin.getDefaultProps;
 
@@ -55,6 +62,7 @@ function mixinClass(reactClass, reactMixin) {
 
   var prototypeMethods = {};
   var staticProps = {};
+  var instanceProps = {};
 
   Object.keys(reactMixin).forEach(function(key) {
     if (key === 'mixins') {
@@ -64,8 +72,10 @@ function mixinClass(reactClass, reactMixin) {
       return; // gets special handling
     } else if (typeof reactMixin[key] === 'function') {
       prototypeMethods[key] = reactMixin[key];
-    } else {
+    } else if (staticPropNames.indexOf(key) >= 0){
       staticProps[key] = reactMixin[key];
+    } else {
+      instanceProps[key] = reactMixin[key];
     }
   });
 
@@ -129,6 +139,10 @@ function mixinClass(reactClass, reactMixin) {
   // https://github.com/facebook/react/blob/41aa3496aa632634f650edbe10d617799922d265/src/isomorphic/classic/class/ReactClass.js#L853
   if (reactMixin.mixins) {
     reactMixin.mixins.reverse().forEach(mixinClass.bind(null, reactClass));
+  }
+
+  if (Object.keys(instanceProps).length > 0) {
+    mixinProto(reactClass.prototype, instanceProps);
   }
 
   return reactClass;
